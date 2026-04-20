@@ -12,6 +12,10 @@
             padding: 28px;
             min-height: 100vh;
         }
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+        }
         h1 { font-size: 18px; font-weight: 600; margin-bottom: 22px; }
 
         .controls {
@@ -20,7 +24,6 @@
             align-items: center;
             margin-bottom: 20px;
             flex-wrap: wrap;
-            max-width: 860px;
         }
         .controls label { font-size: 13px; color: #8b949e; }
         select, button {
@@ -45,10 +48,9 @@
             color: #d29922;
             margin-bottom: 20px;
             display: block;
-            max-width: 860px;
         }
         .warning strong { color: #e3b341; }
-        .palette-section { margin-bottom: 20px; max-width: 860px; }
+        .palette-section { margin-bottom: 20px; }
         .palette-section h2 { font-size: 12px; color: #8b949e; margin-bottom: 10px; font-weight: 400; }
         .palette { display: flex; gap: 20px; align-items: flex-end; }
         .palette-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
@@ -80,7 +82,6 @@
             border-radius: 8px;
             padding: 16px 16px 12px;
             display: block;
-            max-width: 860px;
             margin-bottom: 20px;
             user-select: none;
         }
@@ -126,7 +127,6 @@
             align-items: center;
             gap: 14px;
             margin-bottom: 16px;
-            max-width: 860px;
         }
         .stats { font-size: 12px; color: #8b949e; }
 
@@ -149,6 +149,7 @@
     </style>
 </head>
 <body>
+<div class="container">
 
 <h1>GitHub Contribution Pixel Art</h1>
 
@@ -161,14 +162,14 @@
 
 <div class="warning" id="warning">
     <strong>⚠ Check your existing commits for this year.</strong>
-    GitHub's graph is <strong>relative</strong> — the <strong>lightest green = most commits</strong>
+    GitHub's graph is <strong>relative</strong>: the <strong>lightest green = most commits</strong>
     (your personal daily maximum for that year). If you already have days with more commits than
     your Level 4 value, those cells won't render as the brightest green.
     Make sure your Level 4 exceeds your existing daily maximum for the selected year.
 </div>
 
 <div class="palette-section">
-    <h2>Palette — click a color to select it, adjust commit counts below each level</h2>
+    <h2>Palette: click a color to select it, adjust commit counts below each level</h2>
     <div class="palette" id="palette"></div>
 </div>
 
@@ -187,10 +188,12 @@
     <span class="stats" id="stats"></span>
 </div>
 
-<div class="output-label">Generated Script — save as a .sh file and run with <code>bash script.sh</code></div>
+<div class="output-label">Generated Script: download and run with <code>bash git-art-<span id="labelYear"></span>.sh</code> inside a GitHub repo</div>
 <textarea id="output" readonly placeholder="Paint some cells, then click Generate Bash Script..."></textarea>
 <button class="copy-btn" onclick="copyScript()">Copy to Clipboard</button>
+<button class="copy-btn" onclick="downloadScript()">Download Script</button>
 
+</div>
 <script>
     const COLORS  = ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'];
     const MONTHS  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -220,6 +223,7 @@
 
     function updateWarning() {
         document.getElementById('warning').style.display = 'block';
+        document.getElementById('labelYear').textContent = currentYear;
     }
 
     // ── Palette ───────────────────────────────────────────────────────────────
@@ -344,7 +348,7 @@
                 cell.style.background = COLORS[level];
                 cell.dataset.key = key;
                 cell.title = inside
-                    ? `${d.toDateString()} — ${level ? commitCounts[level] + ' commits' : 'no commits'}`
+                    ? `${d.toDateString()} (${level ? commitCounts[level] + ' commits' : 'no commits'})`
                     : '';
 
                 if (inside) {
@@ -377,7 +381,7 @@
         document.querySelectorAll('.cell:not(.outside)').forEach(cell => {
             cell.style.background = COLORS[0];
             const [col, row] = cell.dataset.key.split(',').map(Number);
-            cell.title = `${cellDate(col, row, currentYear).toDateString()} — no commits`;
+            cell.title = `${cellDate(col, row, currentYear).toDateString()} (no commits)`;
         });
     }
 
@@ -440,9 +444,20 @@
 
     function copyScript() {
         const ta = document.getElementById('output');
-        if (!ta.value || ta.value.startsWith('#')) return;
+        if (!ta.value || ta.value === '# No cells painted.') return;
         ta.select();
         document.execCommand('copy');
+    }
+
+    function downloadScript() {
+        const ta = document.getElementById('output');
+        if (!ta.value || ta.value === '# No cells painted.') return;
+        const blob = new Blob([ta.value], { type: 'text/x-sh' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `git-art-${currentYear}.sh`;
+        a.click();
+        URL.revokeObjectURL(a.href);
     }
 
     // ── Init ─────────────────────────────────────────────────────────────────
