@@ -38,6 +38,7 @@
         button:hover { background: #30363d; }
         button.primary { background: #238636; border-color: #2ea043; }
         button.primary:hover { background: #2ea043; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .warning {
             background: #2d1f00;
@@ -148,20 +149,26 @@
             display: block;
         }
         .copy-btn { margin-top: 8px; }
-        .upload-section { margin-bottom: 20px; }
-        .upload-section h2 { font-size: 12px; color: #8b949e; font-weight: 400; margin-bottom: 10px; }
-        .upload-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-        .upload-label {
-            background: #21262d;
-            color: #e6edf3;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 4px 12px;
-            font-size: 13px;
-            cursor: pointer;
-        }
-        .upload-label:hover { background: #30363d; }
         #imageUpload { display: none; }
+        .drop-zone {
+            border: 2px dashed #30363d;
+            border-radius: 8px;
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            color: #8b949e;
+            font-size: 13px;
+            margin-bottom: 12px;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #58a6ff;
+            background: rgba(88,166,255,0.05);
+            color: #e6edf3;
+        }
+        .drop-zone .drop-icon { font-size: 28px; margin-bottom: 6px; }
+        .drop-zone .drop-sub { font-size: 11px; color: #8b949e; margin-top: 4px; }
+        .upload-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
         .invert-label { font-size: 12px; color: #8b949e; display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .preview-area {
             display: none;
@@ -204,53 +211,104 @@
         }
         footer a { color: #58a6ff; text-decoration: none; }
         footer a:hover { text-decoration: underline; }
+
+        /* ── Image dialog ── */
+        dialog {
+            background: #161b22;
+            color: #e6edf3;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 0;
+            width: min(860px, 96vw);
+            max-height: 92vh;
+            overflow: hidden;
+        }
+        dialog[open] {
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        dialog::backdrop { background: rgba(0,0,0,0.65); }
+        .dialog-header {
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid #30363d;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .dialog-body {
+            padding: 16px 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .dialog-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #30363d;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
 <div class="container">
 
 <h1>GitHub Contribution Pixel Art</h1>
+<p style="font-size:12px;color:#8b949e;margin-bottom:18px;margin-top:-14px;">
+    See a real example: <a href="https://github.com/eXor404?tab=overview&from=2023-12-01&to=2023-12-31" target="_blank" style="color:#58a6ff;text-decoration:none;">eXor404's 2023 contribution graph</a> was made with this tool.
+</p>
 
 <div class="controls">
     <label>Year:</label>
     <select id="yearSelect"></select>
     <button onclick="clearGrid()">Clear All</button>
     <button onclick="fillGrid()">Fill All</button>
+    <button onclick="document.getElementById('imageDialog').showModal()">Use Image</button>
 </div>
 
-<div class="upload-section">
-    <h2>Import Image</h2>
-    <div class="upload-row">
-        <label class="upload-label" for="imageUpload">Choose Image</label>
+<dialog id="imageDialog">
+    <div class="dialog-header">Import Image</div>
+    <div class="dialog-body">
         <input type="file" id="imageUpload" accept="image/*">
-        <label class="invert-label">
-            <input type="checkbox" id="invertToggle"> Invert
-        </label>
-        <span class="stats" id="uploadInfo"></span>
-    </div>
-    <div class="preview-area" id="previewArea">
-        <canvas id="previewCanvas"></canvas>
-        <div class="crop-controls">
-            <div class="crop-pad">
-                <div class="empty"></div>
-                <button onclick="shiftCrop(0,-1)" title="Up">↑</button>
-                <div class="empty"></div>
-                <button onclick="shiftCrop(-1,0)" title="Left">←</button>
-                <div class="empty"></div>
-                <button onclick="shiftCrop(1,0)" title="Right">→</button>
-                <div class="empty"></div>
-                <button onclick="shiftCrop(0,1)" title="Down">↓</button>
-                <div class="empty"></div>
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-icon">🖼</div>
+            <div>Drag &amp; drop an image here, or click to choose</div>
+            <div class="drop-sub" id="uploadInfo">PNG, JPG, GIF, WebP...</div>
+        </div>
+        <div class="upload-row">
+            <label class="invert-label">
+                <input type="checkbox" id="invertToggle"> Invert
+            </label>
+        </div>
+        <div class="preview-area" id="previewArea">
+            <canvas id="previewCanvas"></canvas>
+            <div class="crop-controls">
+                <div class="crop-pad">
+                    <div class="empty"></div>
+                    <button onclick="shiftCrop(0,-1)" title="Up">↑</button>
+                    <div class="empty"></div>
+                    <button onclick="shiftCrop(-1,0)" title="Left">←</button>
+                    <div class="empty"></div>
+                    <button onclick="shiftCrop(1,0)" title="Right">→</button>
+                    <div class="empty"></div>
+                    <button onclick="shiftCrop(0,1)" title="Down">↓</button>
+                    <div class="empty"></div>
+                </div>
+                <div class="scale-row">
+                    <label>Size:</label>
+                    <input type="range" id="scaleSlider" min="10" max="300" value="100" step="5">
+                    <span class="scale-label" id="scaleLabel">100%</span>
+                </div>
             </div>
-            <div class="scale-row">
-                <label>Size:</label>
-                <input type="range" id="scaleSlider" min="10" max="300" value="100" step="5">
-                <span class="scale-label" id="scaleLabel">100%</span>
-            </div>
-            <button class="primary" onclick="stampToGrid()">Apply to Grid</button>
         </div>
     </div>
-</div>
+    <div class="dialog-footer">
+        <button onclick="document.getElementById('imageDialog').close()">Cancel</button>
+        <button class="primary" id="applyBtn" onclick="applyAndClose()" disabled>Apply to Grid</button>
+    </div>
+</dialog>
 
 <canvas id="imgCanvas" style="display:none"></canvas>
 
@@ -565,9 +623,8 @@
     let imgCenterY = 0;
     let imgScale   = 1.0;
 
-    document.getElementById('imageUpload').addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (!file) return;
+    function loadImageFile(file) {
+        if (!file || !file.type.startsWith('image/')) return;
         const img = new Image();
         img.onload = () => {
             lastImage  = img;
@@ -578,9 +635,24 @@
             document.getElementById('scaleSlider').value = 100;
             document.getElementById('uploadInfo').textContent = file.name;
             document.getElementById('previewArea').style.display = 'block';
+            document.getElementById('applyBtn').disabled = false;
             renderPreview();
         };
         img.src = URL.createObjectURL(file);
+    }
+
+    document.getElementById('imageUpload').addEventListener('change', e => {
+        loadImageFile(e.target.files[0]);
+    });
+
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('click', () => document.getElementById('imageUpload').click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        loadImageFile(e.dataTransfer.files[0]);
     });
 
     document.getElementById('invertToggle').addEventListener('change', () => {
@@ -685,6 +757,11 @@
                 if (cell) cell.style.background = COLORS[level];
             }
         }
+    }
+
+    function applyAndClose() {
+        stampToGrid();
+        document.getElementById('imageDialog').close();
     }
 
     // ── Init ─────────────────────────────────────────────────────────────────
