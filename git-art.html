@@ -113,6 +113,7 @@
             height: 11px;
             border-radius: 2px;
             cursor: crosshair;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
         }
         .cell.outside { opacity: 0.25; cursor: default; }
         .cell:not(.outside):hover { outline: 1px solid rgba(255,255,255,0.35); }
@@ -156,9 +157,9 @@
 
 <div class="warning" id="warning">
     <strong>⚠ Check your existing commits for this year.</strong>
-    GitHub's contribution graph is <strong>relative</strong> — colors are scaled based on your
-    personal maximum commits per day <strong>within that year</strong>. If you already have days
-    with more commits than your Level 4 value, those cells won't appear as the darkest green.
+    GitHub's graph is <strong>relative</strong> — the <strong>lightest green = most commits</strong>
+    (your personal daily maximum for that year). If you already have days with more commits than
+    your Level 4 value, those cells won't render as the brightest green.
     Make sure your Level 4 exceeds your existing daily maximum for the selected year.
 </div>
 
@@ -187,7 +188,7 @@
 <button class="copy-btn" onclick="copyScript()">Copy to Clipboard</button>
 
 <script>
-    const COLORS  = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
+    const COLORS  = ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'];
     const MONTHS  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const DAY_LBLS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
