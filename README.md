@@ -8,7 +8,7 @@ Paint pixel art onto your GitHub contribution graph and generate a bash script t
 npm start
 ```
 
-Then open [http://localhost:3000/git-art.html](http://localhost:3000/git-art.html).
+Then open [http://localhost:4444/git-art.html](http://localhost:4444/git-art.html).
 
 ## How it works
 

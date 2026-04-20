@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "GitHub Contribution Pixel Art generator",
   "scripts": {
-    "start": "npx serve . -l 3000"
+    "start": "npx serve . -l 4444"
   }
 }
