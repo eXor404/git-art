@@ -146,6 +146,17 @@
             display: block;
         }
         .copy-btn { margin-top: 8px; }
+        footer {
+            margin-top: 40px;
+            padding-top: 16px;
+            border-top: 1px solid #30363d;
+            font-size: 12px;
+            color: #8b949e;
+            display: flex;
+            gap: 16px;
+        }
+        footer a { color: #58a6ff; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -192,6 +203,11 @@
 <textarea id="output" readonly placeholder="Paint some cells, then click Generate Bash Script..."></textarea>
 <button class="copy-btn" onclick="copyScript()">Copy to Clipboard</button>
 <button class="copy-btn" onclick="downloadScript()">Download Script</button>
+
+<footer>
+    <span><a href="https://github.com/eXor404/git-art" target="_blank">Code on GitHub</a></span>
+    <span>© 2026 by eXor404</span>
+</footer>
 
 </div>
 <script>
