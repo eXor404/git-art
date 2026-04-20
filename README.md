@@ -2,6 +2,8 @@
 
 Paint pixel art onto your GitHub contribution graph and generate a bash script to make it real.
 
+**Live at [git-art.net](https://git-art.net)**
+
 > **Example:** [eXor404's 2023 contribution graph](https://github.com/eXor404?tab=overview&from=2023-12-01&to=2023-12-31) was created with this tool.
 
 ## Features
