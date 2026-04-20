@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GitHub Contribution Pixel Art</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0d1117;
+            color: #e6edf3;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 28px;
+            min-height: 100vh;
+        }
+        h1 { font-size: 18px; font-weight: 600; margin-bottom: 22px; }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .controls label { font-size: 13px; color: #8b949e; }
+        select, button {
+            background: #21262d;
+            color: #e6edf3;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        button:hover { background: #30363d; }
+        button.primary { background: #238636; border-color: #2ea043; }
+        button.primary:hover { background: #2ea043; }
+
+        .palette-section { margin-bottom: 20px; }
+        .palette-section h2 { font-size: 12px; color: #8b949e; margin-bottom: 10px; font-weight: 400; }
+        .palette { display: flex; gap: 20px; align-items: flex-end; }
+        .palette-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .swatch {
+            width: 24px; height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.1s;
+        }
+        .swatch:hover { transform: scale(1.15); }
+        .swatch.active { border-color: #58a6ff; }
+        .swatch-label { font-size: 10px; color: #8b949e; }
+        .commit-input {
+            width: 44px;
+            background: #21262d;
+            color: #e6edf3;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 3px 4px;
+            font-size: 11px;
+            text-align: center;
+        }
+        .commit-input:focus { outline: 1px solid #58a6ff; }
+
+        .graph-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px 16px 12px;
+            display: inline-block;
+            margin-bottom: 20px;
+            user-select: none;
+        }
+        .graph-inner { display: flex; }
+        .day-label-col {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 18px;
+            margin-right: 6px;
+        }
+        .day-lbl {
+            height: 11px;
+            font-size: 9px;
+            color: #8b949e;
+            line-height: 11px;
+            text-align: right;
+        }
+        .graph-right { display: flex; flex-direction: column; }
+        .month-label-row { display: flex; gap: 2px; margin-bottom: 4px; height: 14px; }
+        .month-lbl-cell {
+            width: 11px;
+            min-width: 11px;
+            font-size: 10px;
+            color: #8b949e;
+            overflow: visible;
+            white-space: nowrap;
+        }
+        .weeks-row { display: flex; gap: 2px; }
+        .week-col { display: flex; flex-direction: column; gap: 2px; width: 11px; min-width: 11px; }
+        .cell {
+            width: 11px;
+            height: 11px;
+            border-radius: 2px;
+            cursor: crosshair;
+        }
+        .cell.outside { opacity: 0.25; cursor: default; }
+        .cell:not(.outside):hover { outline: 1px solid rgba(255,255,255,0.35); }
+
+        .generate-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .stats { font-size: 12px; color: #8b949e; }
+
+        .output-label { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
+        textarea {
+            width: 100%;
+            max-width: 860px;
+            height: 260px;
+            background: #161b22;
+            color: #e6edf3;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            display: block;
+        }
+        .copy-btn { margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+<h1>GitHub Contribution Pixel Art</h1>
+
+<div class="controls">
+    <label>Year:</label>
+    <select id="yearSelect"></select>
+    <button onclick="clearGrid()">Clear All</button>
+    <button onclick="fillGrid()">Fill All</button>
+</div>
+
+<div class="palette-section">
+    <h2>Palette — click a color to select it, adjust commit counts below each level</h2>
+    <div class="palette" id="palette"></div>
+</div>
+
+<div class="graph-container" id="graphContainer">
+    <div class="graph-inner">
+        <div class="day-label-col" id="dayLabels"></div>
+        <div class="graph-right">
+            <div class="month-label-row" id="monthLabels"></div>
+            <div class="weeks-row" id="weeksRow"></div>
+        </div>
+    </div>
+</div>
+
+<div class="generate-row">
+    <button class="primary" onclick="generateScript()">Generate Bash Script</button>
+    <span class="stats" id="stats"></span>
+</div>
+
+<div class="output-label">Generated Script — save as a .sh file and run with <code>bash script.sh</code></div>
+<textarea id="output" readonly placeholder="Paint some cells, then click Generate Bash Script..."></textarea>
+<button class="copy-btn" onclick="copyScript()">Copy to Clipboard</button>
+
+<script>
+    const COLORS  = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
+    const MONTHS  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const DAY_LBLS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+
+    let selectedLevel = 1;
+    let commitCounts  = [0, 5, 10, 20, 30];
+    let grid          = {};
+    let isPainting    = false;
+    let currentYear   = new Date().getFullYear();
+
+    // ── Year select ──────────────────────────────────────────────────────────
+    const yearSelect = document.getElementById('yearSelect');
+    for (let y = currentYear - 5; y <= currentYear + 2; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === currentYear) opt.selected = true;
+        yearSelect.appendChild(opt);
+    }
+    yearSelect.addEventListener('change', () => {
+        currentYear = parseInt(yearSelect.value);
+        grid = {};
+        buildGrid();
+    });
+
+    // ── Palette ───────────────────────────────────────────────────────────────
+    function buildPalette() {
+        const container = document.getElementById('palette');
+        container.innerHTML = '';
+        COLORS.forEach((color, i) => {
+            const item = document.createElement('div');
+            item.className = 'palette-item';
+
+            const swatch = document.createElement('div');
+            swatch.className = 'swatch' + (i === selectedLevel ? ' active' : '');
+            swatch.style.background = color;
+            swatch.addEventListener('click', () => { selectedLevel = i; buildPalette(); });
+
+            const lbl = document.createElement('div');
+            lbl.className = 'swatch-label';
+            lbl.textContent = i === 0 ? 'Erase' : `Level ${i}`;
+
+            item.appendChild(swatch);
+            item.appendChild(lbl);
+
+            if (i > 0) {
+                const inp = document.createElement('input');
+                inp.type = 'number';
+                inp.className = 'commit-input';
+                inp.value = commitCounts[i];
+                inp.min = 1; inp.max = 99;
+                inp.title = `Commits for level ${i}`;
+                inp.addEventListener('change', () => {
+                    commitCounts[i] = Math.max(1, parseInt(inp.value) || 1);
+                    inp.value = commitCounts[i];
+                });
+                item.appendChild(inp);
+            }
+
+            container.appendChild(item);
+        });
+    }
+
+    // ── Date helpers ──────────────────────────────────────────────────────────
+    function gridStart(year) {
+        const jan1 = new Date(year, 0, 1);
+        const d    = new Date(jan1);
+        d.setDate(d.getDate() - jan1.getDay()); // back to Sunday
+        return d;
+    }
+
+    function numWeeks(year) {
+        const start = gridStart(year);
+        const dec31 = new Date(year, 11, 31);
+        return Math.min(53, Math.ceil((dec31 - start) / (7 * 86400000)) + 1);
+    }
+
+    function cellDate(col, row, year) {
+        const d = new Date(gridStart(year));
+        d.setDate(d.getDate() + col * 7 + row);
+        return d;
+    }
+
+    function inYear(col, row, year) {
+        return cellDate(col, row, year).getFullYear() === year;
+    }
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function dateStr(d) {
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+
+    // ── Grid builder ──────────────────────────────────────────────────────────
+    function buildGrid() {
+        const nw = numWeeks(currentYear);
+
+        // Day labels
+        const dayLabelsEl = document.getElementById('dayLabels');
+        dayLabelsEl.innerHTML = '';
+        DAY_LBLS.forEach(t => {
+            const d = document.createElement('div');
+            d.className = 'day-lbl';
+            d.textContent = t;
+            dayLabelsEl.appendChild(d);
+        });
+
+        // Month labels
+        const monthLabelsEl = document.getElementById('monthLabels');
+        monthLabelsEl.innerHTML = '';
+        let prevMonth = -1;
+        const monthAt = {};
+        for (let col = 0; col < nw; col++) {
+            for (let row = 0; row < 7; row++) {
+                const d = cellDate(col, row, currentYear);
+                if (d.getFullYear() === currentYear && d.getMonth() !== prevMonth) {
+                    monthAt[col] = MONTHS[d.getMonth()];
+                    prevMonth = d.getMonth();
+                    break;
+                }
+            }
+        }
+        for (let col = 0; col < nw; col++) {
+            const lbl = document.createElement('div');
+            lbl.className = 'month-lbl-cell';
+            lbl.textContent = monthAt[col] || '';
+            monthLabelsEl.appendChild(lbl);
+        }
+
+        // Cells
+        const weeksRow = document.getElementById('weeksRow');
+        weeksRow.innerHTML = '';
+        for (let col = 0; col < nw; col++) {
+            const weekCol = document.createElement('div');
+            weekCol.className = 'week-col';
+
+            for (let row = 0; row < 7; row++) {
+                const key     = `${col},${row}`;
+                const inside  = inYear(col, row, currentYear);
+                const level   = grid[key] || 0;
+                const d       = cellDate(col, row, currentYear);
+
+                const cell = document.createElement('div');
+                cell.className = 'cell' + (inside ? '' : ' outside');
+                cell.style.background = COLORS[level];
+                cell.dataset.key = key;
+                cell.title = inside
+                    ? `${d.toDateString()} — ${level ? commitCounts[level] + ' commits' : 'no commits'}`
+                    : '';
+
+                if (inside) {
+                    cell.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        isPainting = true;
+                        paint(cell);
+                    });
+                    cell.addEventListener('mouseenter', () => { if (isPainting) paint(cell); });
+                }
+                weekCol.appendChild(cell);
+            }
+            weeksRow.appendChild(weekCol);
+        }
+    }
+
+    function paint(cell) {
+        const key = cell.dataset.key;
+        grid[key] = selectedLevel;
+        cell.style.background = COLORS[selectedLevel];
+        const [col, row] = key.split(',').map(Number);
+        const d = cellDate(col, row, currentYear);
+        cell.title = `${d.toDateString()} — ${selectedLevel ? commitCounts[selectedLevel] + ' commits' : 'no commits'}`;
+    }
+
+    document.addEventListener('mouseup', () => { isPainting = false; });
+
+    function clearGrid() {
+        grid = {};
+        document.querySelectorAll('.cell:not(.outside)').forEach(cell => {
+            cell.style.background = COLORS[0];
+            const [col, row] = cell.dataset.key.split(',').map(Number);
+            cell.title = `${cellDate(col, row, currentYear).toDateString()} — no commits`;
+        });
+    }
+
+    function fillGrid() {
+        document.querySelectorAll('.cell:not(.outside)').forEach(cell => {
+            const key = cell.dataset.key;
+            grid[key] = selectedLevel;
+            cell.style.background = COLORS[selectedLevel];
+        });
+    }
+
+    // ── Script generator ─────────────────────────────────────────────────────
+    function generateScript() {
+        const days = [];
+        for (const [key, level] of Object.entries(grid)) {
+            if (!level) continue;
+            const [col, row] = key.split(',').map(Number);
+            if (!inYear(col, row, currentYear)) continue;
+            days.push({ date: dateStr(cellDate(col, row, currentYear)), count: commitCounts[level] });
+        }
+        days.sort((a, b) => a.date.localeCompare(b.date));
+
+        if (!days.length) {
+            document.getElementById('output').value = '# No cells painted.';
+            document.getElementById('stats').textContent = '';
+            return;
+        }
+
+        const totalCommits = days.reduce((s, d) => s + d.count, 0);
+        document.getElementById('stats').textContent =
+            `${days.length} active day(s) · ${totalCommits} total commit(s)`;
+
+        const lines = ['#!/bin/bash', '', 'mkdir -p commits', 'created_files=()', ''];
+
+        for (const { date, count } of days) {
+            lines.push(`echo "[${date}] Creating ${count} commit(s)..."`);
+            for (let i = 1; i <= count; i++) {
+                lines.push(`filename="commits/commit_${date}_${i}.txt"`);
+                lines.push(`echo "Commit ${i} on ${date}" > "$filename"`);
+                lines.push(`created_files+=("$filename")`);
+                lines.push(`git add "$filename"`);
+                lines.push(`GIT_AUTHOR_DATE="${date}T12:00:00+0000" GIT_COMMITTER_DATE="${date}T12:00:00+0000" \\`);
+                lines.push(`    git commit -m "Automatischer Commit: ${date} - Nummer ${i}"`);
+                lines.push(`git push`);
+            }
+            lines.push('');
+        }
+
+        lines.push('if (( ${#created_files[@]} > 0 )); then');
+        lines.push('    echo "Cleaning up files..."');
+        lines.push('    git rm "${created_files[@]}"');
+        lines.push('    git commit -m "Remove auto-generated commit files"');
+        lines.push('    git push');
+        lines.push('fi');
+        lines.push('');
+        lines.push('echo "Done!"');
+
+        document.getElementById('output').value = lines.join('\n');
+    }
+
+    function copyScript() {
+        const ta = document.getElementById('output');
+        if (!ta.value || ta.value.startsWith('#')) return;
+        ta.select();
+        document.execCommand('copy');
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    buildPalette();
+    buildGrid();
+</script>
+</body>
+</html>
