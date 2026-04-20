@@ -78,20 +78,22 @@
 
         .graph-container {
             background: #161b22;
-            border: 1px solid #30363d;
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             padding: 16px 16px 12px;
             display: block;
+            width: 100%;
             margin-bottom: 20px;
             user-select: none;
         }
-        .graph-inner { display: flex; }
+        .graph-inner { display: flex; width: 100%; }
         .day-label-col {
             display: flex;
             flex-direction: column;
             gap: 2px;
             margin-top: 18px;
             margin-right: 6px;
+            flex-shrink: 0;
         }
         .day-lbl {
             height: 13px;
@@ -100,27 +102,27 @@
             line-height: 13px;
             text-align: right;
         }
-        .graph-right { display: flex; flex-direction: column; }
+        .graph-right { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         .month-label-row { display: flex; gap: 2px; margin-bottom: 4px; height: 14px; }
         .month-lbl-cell {
-            width: 13px;
-            min-width: 13px;
+            flex: 1;
+            min-width: 0;
             font-size: 10px;
             color: #8b949e;
             overflow: visible;
             white-space: nowrap;
         }
-        .weeks-row { display: flex; gap: 2px; }
-        .week-col { display: flex; flex-direction: column; gap: 2px; width: 13px; min-width: 13px; }
+        .weeks-row { display: flex; gap: 2px; width: 100%; }
+        .week-col { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
         .cell {
-            width: 13px;
-            height: 13px;
+            width: 100%;
+            aspect-ratio: 1;
             border-radius: 2px;
             cursor: crosshair;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
         }
         .cell.outside { opacity: 0.25; cursor: default; }
-        .cell:not(.outside):hover { outline: 1px solid rgba(255,255,255,0.35); }
+        .cell:not(.outside):hover { outline: 1px solid rgba(255,255,255,0.5); }
 
         .generate-row {
             display: flex;
@@ -146,6 +148,51 @@
             display: block;
         }
         .copy-btn { margin-top: 8px; }
+        .upload-section { margin-bottom: 20px; }
+        .upload-section h2 { font-size: 12px; color: #8b949e; font-weight: 400; margin-bottom: 10px; }
+        .upload-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .upload-label {
+            background: #21262d;
+            color: #e6edf3;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .upload-label:hover { background: #30363d; }
+        #imageUpload { display: none; }
+        .invert-label { font-size: 12px; color: #8b949e; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .preview-area {
+            display: none;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .preview-area canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            image-rendering: pixelated;
+        }
+        .crop-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .crop-pad { display: grid; grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(3, 28px); gap: 3px; }
+        .crop-pad button {
+            width: 28px; height: 28px;
+            padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+        .crop-pad .empty { background: transparent; border: none; cursor: default; }
+        .crop-pad .empty:hover { background: transparent; }
+        .scale-row { display: flex; align-items: center; gap: 8px; }
+        .scale-row label { font-size: 12px; color: #8b949e; white-space: nowrap; }
+        .scale-row input[type=range] { width: 140px; accent-color: #238636; }
+        .scale-label { font-size: 11px; color: #8b949e; min-width: 36px; }
         footer {
             margin-top: 40px;
             padding-top: 16px;
@@ -170,6 +217,42 @@
     <button onclick="clearGrid()">Clear All</button>
     <button onclick="fillGrid()">Fill All</button>
 </div>
+
+<div class="upload-section">
+    <h2>Import Image</h2>
+    <div class="upload-row">
+        <label class="upload-label" for="imageUpload">Choose Image</label>
+        <input type="file" id="imageUpload" accept="image/*">
+        <label class="invert-label">
+            <input type="checkbox" id="invertToggle"> Invert
+        </label>
+        <span class="stats" id="uploadInfo"></span>
+    </div>
+    <div class="preview-area" id="previewArea">
+        <canvas id="previewCanvas"></canvas>
+        <div class="crop-controls">
+            <div class="crop-pad">
+                <div class="empty"></div>
+                <button onclick="shiftCrop(0,-1)" title="Up">↑</button>
+                <div class="empty"></div>
+                <button onclick="shiftCrop(-1,0)" title="Left">←</button>
+                <div class="empty"></div>
+                <button onclick="shiftCrop(1,0)" title="Right">→</button>
+                <div class="empty"></div>
+                <button onclick="shiftCrop(0,1)" title="Down">↓</button>
+                <div class="empty"></div>
+            </div>
+            <div class="scale-row">
+                <label>Size:</label>
+                <input type="range" id="scaleSlider" min="10" max="300" value="100" step="5">
+                <span class="scale-label" id="scaleLabel">100%</span>
+            </div>
+            <button class="primary" onclick="stampToGrid()">Apply to Grid</button>
+        </div>
+    </div>
+</div>
+
+<canvas id="imgCanvas" style="display:none"></canvas>
 
 <div class="warning" id="warning">
     <strong>⚠ Check your existing commits for this year.</strong>
@@ -474,6 +557,134 @@
         a.download = `git-art-${currentYear}.sh`;
         a.click();
         URL.revokeObjectURL(a.href);
+    }
+
+    // ── Image import ─────────────────────────────────────────────────────────
+    let lastImage  = null;
+    let imgCenterX = 0;
+    let imgCenterY = 0;
+    let imgScale   = 1.0;
+
+    document.getElementById('imageUpload').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const img = new Image();
+        img.onload = () => {
+            lastImage  = img;
+            imgScale   = 1.0;
+            const nw   = numWeeks(currentYear);
+            imgCenterX = nw / 2;
+            imgCenterY = 3.5;
+            document.getElementById('scaleSlider').value = 100;
+            document.getElementById('uploadInfo').textContent = file.name;
+            document.getElementById('previewArea').style.display = 'block';
+            renderPreview();
+        };
+        img.src = URL.createObjectURL(file);
+    });
+
+    document.getElementById('invertToggle').addEventListener('change', () => {
+        if (lastImage) renderPreview();
+    });
+
+    document.getElementById('scaleSlider').addEventListener('input', e => {
+        if (!lastImage) return;
+        imgScale = parseInt(e.target.value) / 100;
+        renderPreview();
+    });
+
+    function getImageLayout() {
+        const nw        = numWeeks(currentYear);
+        const imgAspect = lastImage.width / lastImage.height;
+        const gridAspect = nw / 7;
+        let fitW, fitH;
+        if (imgAspect > gridAspect) { fitW = nw; fitH = nw / imgAspect; }
+        else                        { fitH = 7;  fitW = 7 * imgAspect;  }
+        const w = fitW * imgScale;
+        const h = fitH * imgScale;
+        return { x: imgCenterX - w / 2, y: imgCenterY - h / 2, w, h };
+    }
+
+    function renderToHidden() {
+        const nw = numWeeks(currentYear);
+        const { x, y, w, h } = getImageLayout();
+
+        const dstX = Math.max(0, x);
+        const dstY = Math.max(0, y);
+        const dstX2 = Math.min(nw, x + w);
+        const dstY2 = Math.min(7,  y + h);
+        const dstW  = dstX2 - dstX;
+        const dstH  = dstY2 - dstY;
+
+        const hidden = document.getElementById('imgCanvas');
+        hidden.width  = nw;
+        hidden.height = 7;
+        const ctx = hidden.getContext('2d');
+        ctx.clearRect(0, 0, nw, 7);
+
+        if (dstW > 0 && dstH > 0) {
+            const scaleX = lastImage.width  / w;
+            const scaleY = lastImage.height / h;
+            ctx.drawImage(lastImage,
+                (dstX - x) * scaleX, (dstY - y) * scaleY, dstW * scaleX, dstH * scaleY,
+                dstX, dstY, dstW, dstH
+            );
+        }
+        return ctx.getImageData(0, 0, nw, 7).data;
+    }
+
+    function dataToLevel(data, col, row, nw) {
+        const idx   = (row * nw + col) * 4;
+        if (data[idx + 3] === 0) return 0;
+        const invert     = document.getElementById('invertToggle').checked;
+        const brightness = (data[idx] * 299 + data[idx+1] * 587 + data[idx+2] * 114) / 1000;
+        const normalized = brightness / 255;
+        return Math.round(invert ? normalized * 4 : (1 - normalized) * 4);
+    }
+
+    function renderPreview() {
+        const nw   = numWeeks(currentYear);
+        const CELL = 10;
+        const data = renderToHidden();
+        const pcanv = document.getElementById('previewCanvas');
+        pcanv.width  = nw * CELL;
+        pcanv.height = 7  * CELL;
+        pcanv.style.aspectRatio = `${nw} / 7`;
+
+        const pctx = pcanv.getContext('2d');
+        pctx.fillStyle = 'rgba(255,255,255,0.2)';
+        pctx.fillRect(0, 0, nw * CELL, 7 * CELL);
+
+        for (let col = 0; col < nw; col++) {
+            for (let row = 0; row < 7; row++) {
+                pctx.fillStyle = COLORS[dataToLevel(data, col, row, nw)];
+                pctx.fillRect(col * CELL + 1, row * CELL + 1, CELL - 2, CELL - 2);
+            }
+        }
+        document.getElementById('scaleLabel').textContent = `${Math.round(imgScale * 100)}%`;
+    }
+
+    function shiftCrop(dx, dy) {
+        if (!lastImage) return;
+        imgCenterX += dx;
+        imgCenterY += dy;
+        renderPreview();
+    }
+
+    function stampToGrid() {
+        if (!lastImage) return;
+        const nw   = numWeeks(currentYear);
+        const data = renderToHidden();
+        for (let col = 0; col < nw; col++) {
+            for (let row = 0; row < 7; row++) {
+                const key = `${col},${row}`;
+                if (!inYear(col, row, currentYear)) continue;
+                const level = dataToLevel(data, col, row, nw);
+                grid[key]   = level;
+                const cell  = document.querySelector(`.cell[data-key="${key}"]`);
+                if (cell) cell.style.background = COLORS[level];
+            }
+        }
     }
 
     // ── Init ─────────────────────────────────────────────────────────────────
