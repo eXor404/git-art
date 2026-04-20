@@ -35,6 +35,17 @@
         button.primary { background: #238636; border-color: #2ea043; }
         button.primary:hover { background: #2ea043; }
 
+        .warning {
+            background: #2d1f00;
+            border: 1px solid #9e6a03;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #d29922;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .warning strong { color: #e3b341; }
         .palette-section { margin-bottom: 20px; }
         .palette-section h2 { font-size: 12px; color: #8b949e; margin-bottom: 10px; font-weight: 400; }
         .palette { display: flex; gap: 20px; align-items: flex-end; }
@@ -143,6 +154,14 @@
     <button onclick="fillGrid()">Fill All</button>
 </div>
 
+<div class="warning" id="warning">
+    <strong>⚠ Check your existing commits for this year.</strong>
+    GitHub's contribution graph is <strong>relative</strong> — colors are scaled based on your
+    personal maximum commits per day <strong>within that year</strong>. If you already have days
+    with more commits than your Level 4 value, those cells won't appear as the darkest green.
+    Make sure your Level 4 exceeds your existing daily maximum for the selected year.
+</div>
+
 <div class="palette-section">
     <h2>Palette — click a color to select it, adjust commit counts below each level</h2>
     <div class="palette" id="palette"></div>
@@ -191,7 +210,12 @@
         currentYear = parseInt(yearSelect.value);
         grid = {};
         buildGrid();
+        updateWarning();
     });
+
+    function updateWarning() {
+        document.getElementById('warning').style.display = 'block';
+    }
 
     // ── Palette ───────────────────────────────────────────────────────────────
     function buildPalette() {
@@ -419,6 +443,7 @@
     // ── Init ─────────────────────────────────────────────────────────────────
     buildPalette();
     buildGrid();
+    updateWarning();
 </script>
 </body>
 </html>
