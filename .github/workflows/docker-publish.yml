@@ -61,16 +61,22 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            set -euo pipefail
+            IMAGE="ghcr.io/${{ env.IMAGE_NAME_LC }}:${{ github.ref_name }}"
+            # Per-run login dir: two deploys at once must not share credentials state.
+            CONF="$(mktemp -d)"
+            trap 'docker --config "$CONF" logout ghcr.io >/dev/null 2>&1 || true; rm -rf "$CONF"' EXIT
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker --config "$CONF" login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Stop and remove if exists
-            if [ "$(docker ps -aq -f name=git-art)" ]; then
-                docker stop git-art
-                docker rm git-art
-            fi
+            # Pull BEFORE touching the running container. If the pull fails, the
+            # old version keeps serving and this job goes red instead of green.
+            docker --config "$CONF" pull "$IMAGE"
 
-            docker pull ghcr.io/${{ env.IMAGE_NAME_LC }}:${{ github.ref_name }}
-            docker run -d --name git-art -p 127.0.0.1:4444:4444 --restart always ghcr.io/${{ env.IMAGE_NAME_LC }}:${{ github.ref_name }}
+            docker rm -f git-art >/dev/null 2>&1 || true
+            docker run -d --name git-art -p 127.0.0.1:4444:4444 --restart unless-stopped "$IMAGE"
+
+            # A green job must mean the new container is actually up.
+            sleep 5
+            [ "$(docker inspect -f '{{.State.Running}}' git-art)" = true ]
 
             docker image prune -f
-            docker logout ghcr.io
