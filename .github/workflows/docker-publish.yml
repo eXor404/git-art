@@ -70,7 +70,7 @@ jobs:
             fi
 
             docker pull ghcr.io/${{ env.IMAGE_NAME_LC }}:${{ github.ref_name }}
-            docker run -d --name git-art -p 4444:4444 --restart always ghcr.io/${{ env.IMAGE_NAME_LC }}:${{ github.ref_name }}
+            docker run -d --name git-art -p 127.0.0.1:4444:4444 --restart always ghcr.io/${{ env.IMAGE_NAME_LC }}:${{ github.ref_name }}
 
             docker image prune -f
             docker logout ghcr.io
